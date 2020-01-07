@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
@@ -58,9 +59,34 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapWebRoutes()
     {
-        Route::middleware('web')
-             ->namespace($this->namespace)
-             ->group(base_path('routes/web.php'));
+
+        $domainWeb = env('DOMAIN_WEB');
+        $domainAdmin = env('DOMAIN_ADMIN');
+        $domain = preg_replace('#^https?://#', '', Request::root());
+        if($domain=="www.".$domainWeb)
+        {
+            $domainWeb = $domain;
+        }
+
+        if($domain=="www.".$domainAdmin)
+        {
+            $domainAdmin = $domain;
+        }
+
+        if (env('MAINTAIN',false)) {
+            Route::middleware('web')->group(base_path('routes/maintain.php'));
+            return;
+        }
+
+        Route::domain($domainWeb)
+            ->middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/web.php'));
+
+        Route::domain($domainAdmin)
+            ->middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/admin_web.php'));
     }
 
     /**
@@ -72,9 +98,35 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapApiRoutes()
     {
-        Route::prefix('api')
-             ->middleware('api')
-             ->namespace($this->namespace)
-             ->group(base_path('routes/api.php'));
+        $domainWeb = env('DOMAIN_WEB');
+        $domainAdmin = env('DOMAIN_ADMIN');
+        $domain = preg_replace('#^https?://#', '', Request::root());
+        if($domain=="www.".$domainWeb)
+        {
+            $domainWeb = $domain;
+        }
+
+
+        if($domain=="www.".$domainAdmin)
+        {
+            $domainAdmin = $domain;
+        }
+
+        if (env('MAINTAIN',false)) {
+            Route::middleware('api')->group(base_path('routes/maintain.php'));
+            return;
+        }
+
+        Route::domain($domainWeb)
+            ->prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/api.php'));
+
+        Route::domain($domainAdmin)
+            ->prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/admin_api.php'));
     }
 }
